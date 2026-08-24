@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="popup.css" />
+  <title>True North</title>
+</head>
+<body>
+  <header class="tn-head">
+    <span class="tn-leaf">🍁</span>
+    <h1>True North</h1>
+  </header>
+
+  <div class="tn-counts">
+    <div class="tn-stat"><span id="tn-frosted" class="tn-num">–</span><span class="tn-lbl">American</span></div>
+    <div class="tn-stat"><span id="tn-canadian" class="tn-num tn-green">–</span><span class="tn-lbl">Canadian</span></div>
+    <div class="tn-stat"><span id="tn-total" class="tn-num">–</span><span class="tn-lbl">listings</span></div>
+  </div>
+
+  <label class="tn-toggle">
+    <input type="checkbox" id="tn-enabled" checked />
+    <span>Frost American brands</span>
+  </label>
+
+  <ul class="tn-legend">
+    <li><span class="tn-chip tn-made">🍁</span> Made in Canada</li>
+    <li><span class="tn-chip tn-owned">🍁</span> Canadian-owned, made abroad</li>
+    <li><span class="tn-chip tn-us">❄️</span> American — frosted</li>
+    <li><span class="tn-dot"></span> Everything else stays visible</li>
+  </ul>
+
+  <p class="tn-note" id="tn-note">Open an Amazon search to see it work.</p>
+  <p class="tn-credit">Brand data from the r/BuyCanadian community wiki.</p>
+
+  <script src="popup.js"></script>
+</body>
+</html>

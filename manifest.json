@@ -1,0 +1,54 @@
+{
+  "manifest_version": 3,
+  "name": "True North — Buy Canadian on Amazon",
+  "version": "0.1.0",
+  "description": "Frosts non-Canadian Amazon listings so you can shop Canadian. On-device, no accounts, no tracking.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_title": "True North",
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png"
+    }
+  },
+  "background": {
+    "service_worker": "src/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.amazon.ca/*",
+        "*://*.amazon.com/*",
+        "*://*.amazon.co.uk/*",
+        "*://*.amazon.com.au/*",
+        "*://*.amazon.de/*",
+        "*://*.amazon.fr/*",
+        "*://*.amazon.it/*",
+        "*://*.amazon.es/*",
+        "*://*.amazon.co.jp/*",
+        "*://*.amazon.in/*",
+        "*://*.amazon.com.mx/*",
+        "*://*.amazon.com.br/*",
+        "*://*.amazon.nl/*",
+        "*://*.amazon.se/*"
+      ],
+      "js": [
+        "data/canadian-brands.js",
+        "data/us-brands.js",
+        "data/us-brands-extra.js",
+        "src/config.js",
+        "src/detector.js",
+        "src/content.js"
+      ],
+      "css": ["src/frost.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}
