@@ -1,0 +1,1 @@
+/Users/steve/conductor/repos/canazon/.claude/skills/gstack/setup-gbrain/SKILL.md

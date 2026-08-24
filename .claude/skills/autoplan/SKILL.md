@@ -1,0 +1,1 @@
+/Users/steve/conductor/repos/canazon/.claude/skills/gstack/autoplan/SKILL.md
