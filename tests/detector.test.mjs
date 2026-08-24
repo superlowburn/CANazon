@@ -3,6 +3,7 @@ import assert from 'node:assert';
 import '../data/canadian-brands.js';
 import '../data/us-brands.js';
 import '../data/us-brands-extra.js';
+import '../data/us-made.js';
 import '../src/detector.js';
 
 const D = globalThis.TNDetector;
@@ -53,6 +54,25 @@ t('US multi-word brand mid-title (Betty Crocker)', () => {
 
 t('Amazon Basics -> us', () => {
   assert.strictEqual(D.classify('Amazon Basics', 'Amazon Basics 2-Ply Soft Toilet Paper').state, 'us');
+});
+
+// --- Made in USA (verified) ---
+t('verified made-in-USA brand -> us with madeInUSA true (Lodge)', () => {
+  const r = D.classify('', 'Lodge Cast Iron Skillet 12 Inch');
+  assert.strictEqual(r.state, 'us');
+  assert.strictEqual(r.madeInUSA, true);
+});
+
+t('made-in-USA even if foreign-owned (All-Clad)', () => {
+  const r = D.classify('', 'All-Clad D3 Stainless Steel Fry Pan');
+  assert.strictEqual(r.state, 'us');
+  assert.strictEqual(r.madeInUSA, true);
+});
+
+t('ownership-only US brand has madeInUSA false (Charmin)', () => {
+  const r = D.classify('Charmin', 'Charmin Toilet Paper');
+  assert.strictEqual(r.state, 'us');
+  assert.strictEqual(r.madeInUSA, false);
 });
 
 // --- Ambiguous US brand (dataset "review" -> leading only) ---

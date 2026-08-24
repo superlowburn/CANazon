@@ -43,6 +43,7 @@
         "data/canadian-brands.js",
         "data/us-brands.js",
         "data/us-brands-extra.js",
+        "data/us-made.js",
         "src/config.js",
         "src/detector.js",
         "src/content.js"

@@ -31,6 +31,13 @@
   border-radius: 8px;
 }
 
+/* Verified Made-in-USA: a stronger, warmer frost so it reads as the hardest
+   "avoid" tier, distinct from ownership-only American brands. */
+.tn-frost > .tn-overlay.tn-made-us {
+  background: linear-gradient(180deg, rgba(255, 224, 224, 0.66), rgba(226, 226, 250, 0.72));
+  box-shadow: inset 0 3px 0 rgba(178, 34, 52, 0.75);
+}
+
 .tn-reveal {
   position: relative;
   z-index: 1;

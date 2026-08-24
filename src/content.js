@@ -26,15 +26,15 @@
   }
 
   // Build the frost overlay + reveal pill for a tile.
-  function frost(tile) {
+  function frost(tile, madeInUSA) {
     tile.classList.add(cfg.frostClass);
     if (tile.querySelector('.tn-overlay')) return;
     var ov = document.createElement('div');
-    ov.className = 'tn-overlay';
+    ov.className = 'tn-overlay' + (madeInUSA ? ' tn-made-us' : '');
     var pill = document.createElement('button');
     pill.className = 'tn-reveal';
     pill.type = 'button';
-    pill.textContent = 'American · Reveal';
+    pill.textContent = (madeInUSA ? 'Made in USA · Reveal' : 'American · Reveal');
     pill.addEventListener('click', function (e) {
       e.preventDefault();
       e.stopPropagation();
@@ -95,7 +95,7 @@
         counts.canadian++;
         badge(tile, v);
       } else if (v && v.state === 'us') {
-        if (!revealed.has(tile)) { counts.us++; frost(tile); }
+        if (!revealed.has(tile)) { counts.us++; frost(tile, v.madeInUSA); }
       }
       // else: neutral (non-US import / unknown) — left untouched.
       tile.setAttribute(cfg.processedAttr, '1');

@@ -32,6 +32,12 @@ under-covers (Bose, Cuisinart, Char-Broil, GoPro, Roku…). Ownership ≠ manufa
 this flags US-*owned* brands, which is the "don't fund American companies" signal —
 Amazon has no reliable made-in field.
 
+**Verified Made-in-USA** (`data/us-made.js`, 23): brands with a manufacturer-stated
+U.S. production claim (Lodge, Zippo, Cutco, New Balance, All-Clad…). These get a
+stronger frost and a "Made in USA" label — the hardest "avoid" tier — and frost even
+if foreign-owned (made-in-USA is the strongest signal). Claims are scoped to named
+lines; verify the exact ASIN.
+
 **Badge — Canadian brands** (`data/canadian-brands.js`, ~1,164): see below.
 
 ## Where the Canadian data comes from

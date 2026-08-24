@@ -117,7 +117,7 @@
     return null;
   }
 
-  var caIdx = null, usIdx = null, ready = false;
+  var caIdx = null, usIdx = null, usMadeKeys = new Set(), ready = false;
 
   function init() {
     if (ready) return;
@@ -134,8 +134,18 @@
       },
       function (_e, key) { return CA_GENERIC.has(key) ? 'generic' : CA_LEADING.has(key) ? 'leading' : 'normal'; }
     );
+    // Verified made-in-USA brands: matchable (auto) AND flagged, so they frost
+    // even when absent from the ownership list.
+    var usMadeLines = '';
+    (globalThis.US_MADE_RAW || '').split('\n').forEach(function (line) {
+      if (!line || line.indexOf('|') === -1) return;
+      var name = line.split('|')[0].trim();
+      if (!name) return;
+      usMadeKeys.add(norm(name));
+      usMadeLines += name + '|' + name + '|auto|Made in USA\n';
+    });
     usIdx = buildIndex(
-      (globalThis.US_BRANDS_RAW || '') + '\n' + (globalThis.US_BRANDS_EXTRA_RAW || ''),
+      (globalThis.US_BRANDS_RAW || '') + '\n' + (globalThis.US_BRANDS_EXTRA_RAW || '') + '\n' + usMadeLines,
       function (p) {
         var name = (p[0] || '').trim();
         if (!name) return null;
@@ -152,7 +162,10 @@
     var ca = matchIn(caIdx, brandText, titleText);
     if (ca) return { state: 'canadian', madeInCanada: ca.madeInCanada, name: ca.name, tags: ca.tags };
     var us = matchIn(usIdx, brandText, titleText);
-    if (us) return { state: 'us', name: us.canonical || us.name };
+    if (us) {
+      var madeInUSA = usMadeKeys.has(us._key) || usMadeKeys.has(norm(us.canonical || us.name));
+      return { state: 'us', name: us.canonical || us.name, madeInUSA: madeInUSA };
+    }
     return null;
   }
 
