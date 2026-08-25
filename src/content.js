@@ -4,6 +4,11 @@
 (function () {
   'use strict';
 
+  // Guard against double-injection (declarative content_script + programmatic
+  // background injection can both fire into the same isolated world).
+  if (globalThis.__TN_RAN__) return;
+  globalThis.__TN_RAN__ = true;
+
   var cfg = globalThis.TN_CONFIG;
   var revealed = new WeakSet(); // tiles the user un-frosted this session
   var counts = { total: 0, canadian: 0, us: 0 };

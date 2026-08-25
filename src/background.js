@@ -40,14 +40,25 @@ var TN_JS = [
   'data/us-made.js', 'src/config.js', 'src/detector.js', 'src/content.js',
 ];
 
+function injectInto(tabId) {
+  if (tabId == null) return;
+  chrome.scripting.insertCSS({ target: { tabId: tabId }, files: ['src/frost.css'] })
+    .catch(function () {});
+  chrome.scripting.executeScript({ target: { tabId: tabId }, files: TN_JS })
+    .catch(function () {});
+}
+
 chrome.runtime.onInstalled.addListener(function () {
   chrome.tabs.query({ url: TN_MATCHES }, function (tabs) {
-    (tabs || []).forEach(function (t) {
-      if (t.id == null) return;
-      chrome.scripting.insertCSS({ target: { tabId: t.id }, files: ['src/frost.css'] })
-        .catch(function () {});
-      chrome.scripting.executeScript({ target: { tabId: t.id }, files: TN_JS })
-        .catch(function () {});
-    });
+    (tabs || []).forEach(function (t) { injectInto(t.id); });
   });
+});
+
+// Belt-and-suspenders: inject on every Amazon page load, independent of the
+// declarative content_scripts registration (which can be gated by per-extension
+// site-access settings). The content script's re-entry guard makes this safe.
+chrome.tabs.onUpdated.addListener(function (tabId, info, tab) {
+  if (info.status !== 'complete') return;
+  if (!tab || !tab.url || !/^https?:\/\/[^/]*\.amazon\./.test(tab.url)) return;
+  injectInto(tabId);
 });
