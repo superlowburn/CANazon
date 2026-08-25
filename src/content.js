@@ -66,7 +66,7 @@
     tile.appendChild(ov);
   }
 
-  // Add the Canadian flag badge (non-clickable in v1). Solid flag = made in
+  // Add the Canadian flag badge. Solid flag = made in
   // Canada; outline flag = Canadian-owned but made abroad.
   function badge(tile, entry) {
     tile.classList.add(cfg.canadianClass);

@@ -1,1 +1,0 @@
-/Users/steve/conductor/repos/canazon/.claude/skills/gstack/plan-ceo-review/SKILL.md
