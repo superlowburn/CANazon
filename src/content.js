@@ -121,7 +121,16 @@
     scan();
     var mo = new MutationObserver(function (muts) {
       for (var i = 0; i < muts.length; i++) {
-        if (muts[i].addedNodes && muts[i].addedNodes.length) { schedule(); return; }
+        var added = muts[i].addedNodes || [];
+        for (var j = 0; j < added.length; j++) {
+          var n = added[j];
+          // Ignore our own overlay/badge insertions, or we'd loop forever.
+          if (n.nodeType === 1 &&
+              !(n.classList && (n.classList.contains('tn-overlay') || n.classList.contains('tn-badge')))) {
+            schedule();
+            return;
+          }
+        }
       }
     });
     mo.observe(document.body, { childList: true, subtree: true });

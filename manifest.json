@@ -21,6 +21,23 @@
   "background": {
     "service_worker": "src/background.js"
   },
+  "permissions": ["scripting"],
+  "host_permissions": [
+    "*://*.amazon.ca/*",
+    "*://*.amazon.com/*",
+    "*://*.amazon.co.uk/*",
+    "*://*.amazon.com.au/*",
+    "*://*.amazon.de/*",
+    "*://*.amazon.fr/*",
+    "*://*.amazon.it/*",
+    "*://*.amazon.es/*",
+    "*://*.amazon.co.jp/*",
+    "*://*.amazon.in/*",
+    "*://*.amazon.com.mx/*",
+    "*://*.amazon.com.br/*",
+    "*://*.amazon.nl/*",
+    "*://*.amazon.se/*"
+  ],
   "content_scripts": [
     {
       "matches": [
