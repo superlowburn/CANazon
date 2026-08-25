@@ -46,7 +46,7 @@ function element(tagName) {
   return node;
 }
 
-function contentHarness({ hydrated, pageType = 'search' }) {
+function contentHarness({ hydrated, pageType = 'search', state = 'us' }) {
   let titlesReady = hydrated;
   let mutationCallback;
   let reports = 0;
@@ -77,7 +77,11 @@ function contentHarness({ hydrated, pageType = 'search' }) {
     console: { log() {} },
     TNDetector: {
       init() {},
-      classify() { return { state: 'us', madeInUSA: false }; },
+      classify() {
+        return state === 'canadian'
+          ? { state: 'canadian', madeInCanada: true, name: 'Test Canada', tags: [] }
+          : { state: 'us', madeInUSA: false };
+      },
     },
     document: {
       readyState: 'complete',
@@ -115,6 +119,7 @@ function contentHarness({ hydrated, pageType = 'search' }) {
     hydrate() { titlesReady = true; },
     mutate(addedNodes) { mutationCallback([{ addedNodes }]); },
     overlay() { return tile.querySelector('.tn-overlay'); },
+    badge() { return tile.querySelector('.tn-badge'); },
     processed() { return tile.attributes['data-tn-done']; },
     reports() { return reports; },
     tile,
@@ -152,6 +157,21 @@ test('processes Amazon category product cards', () => {
 
   assert.equal(page.processed(), '1');
   assert.equal(page.tile.classList.contains('tn-frost'), true);
+});
+
+test('adds a red X marker to American frost', () => {
+  const page = contentHarness({ hydrated: true });
+  const overlay = page.overlay();
+
+  assert.ok(overlay.children.some((child) => child.classList.contains('tn-us-x')));
+});
+
+test('adds a maple leaf marker to Canadian cards', () => {
+  const page = contentHarness({ hydrated: true, state: 'canadian' });
+  const badge = page.badge();
+
+  assert.ok(badge);
+  assert.ok(badge.children.some((child) => child.classList.contains('tn-maple')));
 });
 
 test('ignores its own overlay mutation', async () => {

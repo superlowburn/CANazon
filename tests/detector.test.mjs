@@ -1,4 +1,4 @@
-// Unit tests for the True North detector. Run: node tests/detector.test.mjs
+// Unit tests for the CANazon detector. Run: node tests/detector.test.mjs
 import assert from 'node:assert';
 import '../data/canadian-brands.js';
 import '../data/us-brands.js';
