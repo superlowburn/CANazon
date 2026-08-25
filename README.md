@@ -9,6 +9,10 @@ CANazon is a small Chrome extension that makes Canadian brands easier to spot wh
 - Click **Reveal** to uncover a frosted listing.
 - Unknown brands stay visible.
 
+## What it looks like
+
+![CANazon highlighting a Canadian product and frosting an American product on Amazon](store-assets/CANazon-store-screenshot-1280x800.png)
+
 ## Install from the ZIP
 
 Chrome cannot install the ZIP directly. Unzip it first.
