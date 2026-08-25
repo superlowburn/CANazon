@@ -1,5 +1,7 @@
 // True North service worker (MV3). Relays live counts from content scripts to
 // the toolbar badge and the popup. No network, no storage of browsing data.
+// Content scripts inject declaratively (see manifest content_scripts) — no host
+// permissions, so Chrome auto-runs them on Amazon with no per-site opt-in.
 'use strict';
 
 var latest = {}; // tabId -> counts
@@ -24,41 +26,3 @@ chrome.runtime.onMessage.addListener(function (msg, _sender, sendResponse) {
 });
 
 chrome.tabs.onRemoved.addListener(function (tabId) { delete latest[tabId]; });
-
-// Content scripts only auto-inject into pages loaded AFTER the extension is
-// installed/updated. So on install/update, inject into any already-open Amazon
-// tabs — otherwise the user sees "nothing working" until they reload the tab.
-var TN_MATCHES = [
-  '*://*.amazon.ca/*', '*://*.amazon.com/*', '*://*.amazon.co.uk/*',
-  '*://*.amazon.com.au/*', '*://*.amazon.de/*', '*://*.amazon.fr/*',
-  '*://*.amazon.it/*', '*://*.amazon.es/*', '*://*.amazon.co.jp/*',
-  '*://*.amazon.in/*', '*://*.amazon.com.mx/*', '*://*.amazon.com.br/*',
-  '*://*.amazon.nl/*', '*://*.amazon.se/*',
-];
-var TN_JS = [
-  'data/canadian-brands.js', 'data/us-brands.js', 'data/us-brands-extra.js',
-  'data/us-made.js', 'src/config.js', 'src/detector.js', 'src/content.js',
-];
-
-function injectInto(tabId) {
-  if (tabId == null) return;
-  chrome.scripting.insertCSS({ target: { tabId: tabId }, files: ['src/frost.css'] })
-    .catch(function () {});
-  chrome.scripting.executeScript({ target: { tabId: tabId }, files: TN_JS })
-    .catch(function () {});
-}
-
-chrome.runtime.onInstalled.addListener(function () {
-  chrome.tabs.query({ url: TN_MATCHES }, function (tabs) {
-    (tabs || []).forEach(function (t) { injectInto(t.id); });
-  });
-});
-
-// Belt-and-suspenders: inject on every Amazon page load, independent of the
-// declarative content_scripts registration (which can be gated by per-extension
-// site-access settings). The content script's re-entry guard makes this safe.
-chrome.tabs.onUpdated.addListener(function (tabId, info, tab) {
-  if (info.status !== 'complete') return;
-  if (!tab || !tab.url || !/^https?:\/\/[^/]*\.amazon\./.test(tab.url)) return;
-  injectInto(tabId);
-});
