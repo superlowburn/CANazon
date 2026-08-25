@@ -9,6 +9,13 @@
   if (globalThis.__TN_RAN__) return;
   globalThis.__TN_RAN__ = true;
 
+  console.log('[TrueNorth] content script loaded', {
+    hasConfig: !!globalThis.TN_CONFIG,
+    hasDetector: !!globalThis.TNDetector,
+    hasCanadaData: !!globalThis.CANADIAN_BRANDS_RAW,
+    hasUSData: !!globalThis.US_BRANDS_RAW
+  });
+
   var cfg = globalThis.TN_CONFIG;
   var revealed = new WeakSet(); // tiles the user un-frosted this session
   var counts = { total: 0, canadian: 0, us: 0 };
@@ -27,7 +34,7 @@
     cfg.tileSelectors.forEach(function (sel) {
       document.querySelectorAll(sel).forEach(function (n) { set.add(n); });
     });
-    return Array.prototype.slice.call(set);
+    return Array.from(set);
   }
 
   // Build the frost overlay + reveal pill for a tile.
@@ -124,13 +131,14 @@
   function start() {
     globalThis.TNDetector.init();
     scan();
+    console.log('[TrueNorth] first scan complete', counts);
     var mo = new MutationObserver(function (muts) {
       for (var i = 0; i < muts.length; i++) {
         var added = muts[i].addedNodes || [];
         for (var j = 0; j < added.length; j++) {
           var n = added[j];
           // Ignore our own overlay/badge insertions, or we'd loop forever.
-          if (n.nodeType === 1 &&
+          if (n.nodeType !== 1 ||
               !(n.classList && (n.classList.contains('tn-overlay') || n.classList.contains('tn-badge')))) {
             schedule();
             return;

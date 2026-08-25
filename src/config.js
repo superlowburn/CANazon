@@ -5,9 +5,17 @@ globalThis.TN_CONFIG = {
   tileSelectors: [
     'div[data-component-type="s-search-result"]',
     'div.s-result-item[data-asin]:not([data-asin=""])',
+    'div[id^="gridItemRoot"]',
+    'li.octopus-pc-item',
   ],
   // Product title text inside a tile (first match wins).
-  titleSelectors: ['h2 a span', 'h2 span', 'h2'],
+  titleSelectors: [
+    'h2 a span',
+    'h2 span',
+    'h2',
+    'a.a-link-normal[href*="/dp/"]:not([aria-hidden="true"])',
+    '.octopus-pc-asin-title',
+  ],
   // Optional explicit brand byline inside a tile (best-effort; may be absent).
   brandSelectors: [
     'h2.a-size-mini span',
