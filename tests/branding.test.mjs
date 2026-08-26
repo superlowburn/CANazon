@@ -23,3 +23,11 @@ test('README gives ZIP installation instructions', async () => {
   assert.match(readme, /Load unpacked/);
   assert.match(readme, /manifest\.json/);
 });
+
+test('Canadian card badges match the legend states', async () => {
+  const css = await readFile(new URL('src/frost.css', root), 'utf8');
+
+  assert.match(css, /\.tn-badge\.tn-made\s*\{[^}]*background:\s*#d52b1e;/);
+  assert.match(css, /\.tn-badge\.tn-owned\s*\{[^}]*background:\s*#fff;[^}]*border:\s*2px solid #d52b1e;/);
+  assert.doesNotMatch(css, /\.tn-maple\s*\{[^}]*clip-path:/);
+});

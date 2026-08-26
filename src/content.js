@@ -75,6 +75,7 @@
     b.className = 'tn-badge' + (entry.madeInCanada ? ' tn-made' : ' tn-owned');
     var leaf = document.createElement('span');
     leaf.className = 'tn-maple';
+    leaf.textContent = '🍁';
     leaf.setAttribute('aria-hidden', 'true');
     b.appendChild(leaf);
     var label = entry.madeInCanada ? 'Made in Canada' : 'Canadian-owned (made abroad)';

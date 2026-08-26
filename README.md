@@ -4,7 +4,8 @@
 
 CANazon is a small Chrome extension that makes Canadian brands easier to spot while shopping on Amazon.
 
-- Canadian brands get a large red maple leaf.
+- Made in Canada brands get a solid red maple-leaf badge.
+- Canadian-owned brands made abroad get a white maple-leaf badge outlined in red.
 - Recognized American brands get heavy frost and a red X.
 - Click **Reveal** to uncover a frosted listing.
 - Unknown brands stay visible.

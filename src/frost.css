@@ -81,24 +81,23 @@
   user-select: none;
 }
 
-/* Solid-red maple leaf, independent of the operating system's emoji style. */
 .tn-maple {
   display: block;
-  width: 34px;
-  height: 36px;
-  background: #d52b1e;
-  clip-path: polygon(
-    50% 0%, 58% 20%, 72% 12%, 68% 31%, 91% 27%, 80% 47%,
-    100% 56%, 73% 66%, 77% 89%, 57% 82%, 57% 100%, 43% 100%,
-    43% 82%, 23% 89%, 27% 66%, 0% 56%, 20% 47%, 9% 27%,
-    32% 31%, 28% 12%, 42% 20%
-  );
-  filter: drop-shadow(0 1px 1px rgba(255, 255, 255, 0.9)) drop-shadow(0 2px 2px rgba(0, 0, 0, 0.25));
+  font: 28px/1 Apple Color Emoji, Segoe UI Emoji, sans-serif;
 }
 
-.tn-badge.tn-made,
+.tn-badge.tn-made {
+  color: #fff;
+  background: #d52b1e;
+  border: 2px solid #d52b1e;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
 .tn-badge.tn-owned {
-  background: transparent;
-  border: 0;
-  box-shadow: none;
+  color: #d52b1e;
+  background: #fff;
+  border: 2px solid #d52b1e;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }

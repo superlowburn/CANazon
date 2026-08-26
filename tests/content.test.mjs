@@ -46,7 +46,7 @@ function element(tagName) {
   return node;
 }
 
-function contentHarness({ hydrated, pageType = 'search', state = 'us' }) {
+function contentHarness({ hydrated, pageType = 'search', state = 'us', madeInCanada = true }) {
   let titlesReady = hydrated;
   let mutationCallback;
   let reports = 0;
@@ -79,7 +79,7 @@ function contentHarness({ hydrated, pageType = 'search', state = 'us' }) {
       init() {},
       classify() {
         return state === 'canadian'
-          ? { state: 'canadian', madeInCanada: true, name: 'Test Canada', tags: [] }
+          ? { state: 'canadian', madeInCanada, name: 'Test Canada', tags: [] }
           : { state: 'us', madeInUSA: false };
       },
     },
@@ -166,12 +166,22 @@ test('adds a red X marker to American frost', () => {
   assert.ok(overlay.children.some((child) => child.classList.contains('tn-us-x')));
 });
 
-test('adds a maple leaf marker to Canadian cards', () => {
-  const page = contentHarness({ hydrated: true, state: 'canadian' });
+test('adds a filled-state maple leaf marker to made-in-Canada cards', () => {
+  const page = contentHarness({ hydrated: true, state: 'canadian', madeInCanada: true });
   const badge = page.badge();
+  const leaf = badge.children.find((child) => child.classList.contains('tn-maple'));
 
-  assert.ok(badge);
-  assert.ok(badge.children.some((child) => child.classList.contains('tn-maple')));
+  assert.equal(badge.classList.contains('tn-made'), true);
+  assert.equal(leaf.textContent, '🍁');
+});
+
+test('adds an outlined-state maple leaf marker to Canadian-owned cards', () => {
+  const page = contentHarness({ hydrated: true, state: 'canadian', madeInCanada: false });
+  const badge = page.badge();
+  const leaf = badge.children.find((child) => child.classList.contains('tn-maple'));
+
+  assert.equal(badge.classList.contains('tn-owned'), true);
+  assert.equal(leaf.textContent, '🍁');
 });
 
 test('ignores its own overlay mutation', async () => {
