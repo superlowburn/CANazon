@@ -52,6 +52,17 @@ t('Stanfields leading title -> Canadian-owned, made abroad', () => {
   assert.strictEqual(r.madeInCanada, false);
 });
 
+[
+  "Stanfield's Men's Premium Crew Neck T-Shirt",
+  "Stanfield’s Men’s Premium Long Sleeve Shirt",
+  "Stanfield's Mens Men's Ribbed Turtleneck Pullover",
+  "Stanfield's Men's Cotton Big and Tall Vneck Undershirt (2 Pack)",
+].forEach((title) => t(`Stanfields apparel title -> Canadian-owned (${title})`, () => {
+  const r = D.classify('', title);
+  assert.strictEqual(r.state, 'canadian');
+  assert.strictEqual(r.madeInCanada, false);
+}));
+
 t("Stanfield's book title stays neutral without an exact byline", () => {
   assert.strictEqual(D.classify('', "Stanfield's Introduction to Health Professions"), null);
   assert.strictEqual(D.classify('', 'Stanfields'), null);

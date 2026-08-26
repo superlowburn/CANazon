@@ -77,7 +77,7 @@
   function ambOf(idx, key) { var e = idx.byKey.get(key); return e ? e._amb : 'normal'; }
 
   function allowsLeadingTitle(key, title) {
-    return key !== 'stanfields' || /(?:^| )(men|women|unisex|shirt|tee|t shirt|underwear|brief|boxer|sock|thermal|fleece|hoodie|sweater|jacket|pants|legging|pajama|clothing|apparel)(?: |$)/.test(title);
+    return key !== 'stanfields' || /(?:^| )(men|mens|women|womens|unisex|shirt|tee|t shirt|underwear|undershirt|brief|boxer|sock|thermal|fleece|hoodie|sweater|jacket|pants|legging|pajama|turtleneck|pullover|vneck|clothing|apparel)(?: |$)/.test(title);
   }
 
   function matchIn(idx, brandText, titleText) {
