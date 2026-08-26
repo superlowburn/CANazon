@@ -25,6 +25,7 @@
       .normalize('NFD')
       .replace(/[̀-ͯ]/g, '')
       .replace(/&/g, ' and ')
+      .replace(/[’']/g, '')
       .replace(/[^a-z0-9]+/g, ' ')
       .trim()
       .replace(/\s+/g, ' ');
@@ -41,7 +42,7 @@
   var CA_LEADING = new Set([
     'mint', 'pilot', 'helix', 'challenger', 'paradigm', 'equator', 'monogram',
     'endy', 'attitude', 'hatch', 'bows', 'subtext', 'tanit', 'calita', 'lija',
-    'onze', 'nemesis',
+    'onze', 'nemesis', 'stanfields',
   ]);
 
   // amb(entry) -> 'generic' | 'leading' | 'normal'

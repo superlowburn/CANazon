@@ -40,4 +40,5 @@ Chefman|Chefman|auto|Kitchen appliances
 Elite Gourmet|Elite Gourmet|auto|Kitchen appliances
 Mrs. Meyer's|Mrs. Meyer's|auto|Household cleaning
 Ivory|Ivory|review|Household & personal care
+Hanes|Hanes|auto|Apparel
 `;
