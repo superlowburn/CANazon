@@ -19,7 +19,7 @@
   var cfg = globalThis.TN_CONFIG;
   var revealed = new WeakSet(); // tiles the user un-frosted this session
   var counts = { total: 0, canadian: 0, us: 0 };
-  var enabled = true;
+  var mode = 'canadian-first';
 
   function firstText(root, selectors) {
     for (var i = 0; i < selectors.length; i++) {
@@ -38,7 +38,7 @@
   }
 
   // Build the frost overlay + reveal pill for a tile.
-  function frost(tile, madeInUSA) {
+  function frost(tile, madeInUSA, label) {
     tile.classList.add(cfg.frostClass);
     if (tile.querySelector('.tn-overlay')) return;
     var ov = document.createElement('div');
@@ -50,7 +50,7 @@
     var pill = document.createElement('button');
     pill.className = 'tn-reveal';
     pill.type = 'button';
-    pill.textContent = (madeInUSA ? 'Made in USA · Reveal' : 'American · Reveal');
+    pill.textContent = label || (madeInUSA ? 'Made in USA · Reveal' : 'American · Reveal');
     pill.addEventListener('click', function (e) {
       e.preventDefault();
       e.stopPropagation();
@@ -58,7 +58,7 @@
       tile.classList.remove(cfg.frostClass);
       if (ov.parentNode) ov.parentNode.removeChild(ov);
     });
-    ov.appendChild(x);
+    if (!label) ov.appendChild(x);
     ov.appendChild(pill);
     // Tile needs positioning context for the absolute overlay.
     var cs = getComputedStyle(tile);
@@ -66,21 +66,25 @@
     tile.appendChild(ov);
   }
 
-  // Add the Canadian flag badge. Solid flag = made in
-  // Canada; outline flag = Canadian-owned but made abroad.
+  // Add a visible, right-aligned origin label using the existing maple mark.
   function badge(tile, entry) {
-    tile.classList.add(cfg.canadianClass);
+    if (entry.state === 'canadian') tile.classList.add(cfg.canadianClass);
     if (tile.querySelector('.tn-badge')) return;
     var b = document.createElement('div');
-    b.className = 'tn-badge' + (entry.madeInCanada ? ' tn-made' : ' tn-owned');
+    var stateClass = entry.unknown ? ' tn-unknown' : entry.state === 'us' ? ' tn-us' : entry.madeInCanada ? ' tn-made' : ' tn-owned';
+    b.className = 'tn-badge' + stateClass;
     var leaf = document.createElement('span');
     leaf.className = 'tn-maple';
-    leaf.textContent = '🍁';
+    leaf.textContent = entry.unknown ? '?' : entry.state === 'us' ? '🇺🇸' : '🍁';
     leaf.setAttribute('aria-hidden', 'true');
     b.appendChild(leaf);
-    var label = entry.madeInCanada ? 'Made in Canada' : 'Canadian-owned (made abroad)';
+    var label = entry.unknown ? 'Origin unknown' : entry.state === 'us' ? 'American-owned' : entry.madeInCanada ? 'Made in Canada' : 'Canadian-owned · Made elsewhere';
     if (entry.tags && entry.tags.length) label += ' · ' + entry.tags.join(', ');
-    b.title = entry.name + ' — ' + label;
+    var text = document.createElement('span');
+    text.className = 'tn-badge-label';
+    text.textContent = label;
+    b.appendChild(text);
+    b.title = entry.name ? entry.name + ' — ' + label : label;
     b.setAttribute('aria-label', b.title);
     var cs = getComputedStyle(tile);
     if (cs.position === 'static') tile.style.position = 'relative';
@@ -93,6 +97,7 @@
     if (ov) ov.parentNode.removeChild(ov);
     var bd = tile.querySelector('.tn-badge');
     if (bd) bd.parentNode.removeChild(bd);
+    tile.style.order = '';
   }
 
   function scan() {
@@ -104,21 +109,26 @@
       if (!title) return;
       counts.total++;
 
-      if (!enabled) { clearMarks(tile); return; }
-
-      var brand = firstText(tile, cfg.brandSelectors);
-      var v = globalThis.TNDetector.classify(brand, title);
+      if (mode === 'paused') { clearMarks(tile); return; }
 
       // Reset prior marks before re-deciding (layout can recycle nodes).
       clearMarks(tile);
 
+      var brand = firstText(tile, cfg.brandSelectors);
+      var v = globalThis.TNDetector.classify(brand, title);
+
       if (v && v.state === 'canadian') {
         counts.canadian++;
+        tile.style.order = mode === 'canadian-first' ? '0' : '';
         badge(tile, v);
       } else if (v && v.state === 'us') {
+        tile.style.order = mode === 'canadian-first' ? '2' : '';
+        badge(tile, v);
         if (!revealed.has(tile)) { counts.us++; frost(tile, v.madeInUSA); }
+      } else {
+        tile.style.order = mode === 'canadian-first' ? '1' : '';
+        badge(tile, { unknown: true });
       }
-      // else: neutral (non-US import / unknown) — left untouched.
       tile.setAttribute(cfg.processedAttr, '1');
     });
     report();
@@ -158,16 +168,23 @@
     mo.observe(document.body, { childList: true, subtree: true });
   }
 
-  // Popup asks for counts / toggles the filter.
+  // Popup asks for counts; settings changes update the active page immediately.
   chrome.runtime.onMessage.addListener(function (msg, _sender, sendResponse) {
     if (!msg) return;
-    if (msg.type === 'tn-get-counts') { sendResponse({ counts: counts, enabled: enabled }); return true; }
-    if (msg.type === 'tn-set-enabled') { enabled = !!msg.enabled; scan(); sendResponse({ ok: true }); return true; }
+    if (msg.type === 'tn-get-counts') { sendResponse({ counts: counts, mode: mode }); return true; }
+    if (msg.type === 'tn-set-mode') { mode = msg.mode || 'canadian-first'; scan(); sendResponse({ ok: true }); return true; }
+    if (msg.type === 'tn-set-enabled') { mode = msg.enabled ? 'canadian-first' : 'paused'; scan(); sendResponse({ ok: true }); return true; }
   });
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', start);
-  } else {
-    start();
+  function ready() {
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+    else start();
   }
+
+  if (chrome.storage && chrome.storage.sync) {
+    chrome.storage.sync.get({ mode: 'canadian-first' }, function (saved) { mode = saved.mode; ready(); });
+    chrome.storage.onChanged.addListener(function (changes, area) {
+      if (area === 'sync' && changes.mode) { mode = changes.mode.newValue; scan(); }
+    });
+  } else ready();
 })();

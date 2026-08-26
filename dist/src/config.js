@@ -7,6 +7,7 @@ globalThis.TN_CONFIG = {
     'div.s-result-item[data-asin]:not([data-asin=""])',
     'div[id^="gridItemRoot"]',
     'li.octopus-pc-item',
+    'div[id^="CardInstance"].sb-video-creative',
   ],
   // Product title text inside a tile (first match wins).
   titleSelectors: [

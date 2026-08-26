@@ -10,7 +10,9 @@ function setCounts(c) {
 
 document.addEventListener('DOMContentLoaded', function () {
   var note = document.getElementById('tn-note');
-  var toggle = document.getElementById('tn-enabled');
+  document.getElementById('tn-settings').addEventListener('click', function () {
+    chrome.runtime.openOptionsPage();
+  });
 
   chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
     var tab = tabs && tabs[0];
@@ -23,16 +25,10 @@ document.addEventListener('DOMContentLoaded', function () {
         return;
       }
       setCounts(resp.counts);
-      toggle.checked = resp.enabled !== false;
       note.textContent = resp.counts && resp.counts.total
         ? 'Showing ' + resp.counts.canadian + ' Canadian of ' + resp.counts.total + '.'
         : 'No listings detected on this page yet.';
     });
 
-    toggle.addEventListener('change', function () {
-      chrome.tabs.sendMessage(tab.id, { type: 'tn-set-enabled', enabled: toggle.checked }, function () {
-        void chrome.runtime.lastError; // ignore if no receiver
-      });
-    });
   });
 });

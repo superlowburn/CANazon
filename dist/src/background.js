@@ -9,7 +9,7 @@ var latest = {}; // tabId -> counts
 chrome.runtime.onMessage.addListener(function (msg, sender) {
   if (msg && msg.type === 'tn-counts' && sender.tab && sender.tab.id != null) {
     latest[sender.tab.id] = msg.counts;
-    var n = msg.counts && msg.counts.us ? String(msg.counts.us) : '';
+    var n = msg.counts && msg.counts.canadian ? String(msg.counts.canadian) : '';
     try {
       chrome.action.setBadgeBackgroundColor({ tabId: sender.tab.id, color: '#d52b1e' });
       chrome.action.setBadgeText({ tabId: sender.tab.id, text: n });
