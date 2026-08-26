@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
 import test from 'node:test';
 
 const root = new URL('../', import.meta.url);
@@ -22,6 +22,14 @@ test('README gives ZIP installation instructions', async () => {
   assert.match(readme, /CANazon-0\.1\.0\.zip/);
   assert.match(readme, /Load unpacked/);
   assert.match(readme, /manifest\.json/);
+});
+
+test('distribution includes the README screenshot asset', async () => {
+  const readme = await readFile(new URL('dist/README.md', root), 'utf8');
+  const match = readme.match(/\]\((store-assets\/[^)]+)\)/);
+
+  assert.ok(match, 'expected a README image path');
+  assert.ok((await stat(new URL('dist/' + match[1], root))).isFile());
 });
 
 test('Canadian card badges match the legend states', async () => {

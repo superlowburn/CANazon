@@ -52,6 +52,11 @@ t('Stanfields leading title -> Canadian-owned, made abroad', () => {
   assert.strictEqual(r.madeInCanada, false);
 });
 
+t("Stanfield's book title stays neutral without an exact byline", () => {
+  assert.strictEqual(D.classify('', "Stanfield's Introduction to Health Professions"), null);
+  assert.strictEqual(D.classify('', 'Stanfields'), null);
+});
+
 t('Stanfields inside an unrelated book title stays neutral', () => {
   assert.strictEqual(D.classify('', 'The Last of the Stanfields: A Novel'), null);
 });

@@ -76,6 +76,10 @@
 
   function ambOf(idx, key) { var e = idx.byKey.get(key); return e ? e._amb : 'normal'; }
 
+  function allowsLeadingTitle(key, title) {
+    return key !== 'stanfields' || /(?:^| )(men|women|unisex|shirt|tee|t shirt|underwear|brief|boxer|sock|thermal|fleece|hoodie|sweater|jacket|pants|legging|pajama|clothing|apparel)(?: |$)/.test(title);
+  }
+
   function matchIn(idx, brandText, titleText) {
     // 1) Exact brand byline (most reliable; any ambiguity level).
     var bkey = norm(brandText);
@@ -95,7 +99,7 @@
 
     var title = norm(titleText);
     if (!title) return null;
-    if (idx.byKey.has(title)) return idx.byKey.get(title);
+    if (idx.byKey.has(title) && allowsLeadingTitle(title, title)) return idx.byKey.get(title);
     var padded = ' ' + title + ' ';
 
     // 3) Normal multi-word brand anywhere in the title.
@@ -110,7 +114,7 @@
     }
     // 5) Leading single-word token (allows 'leading' + 'normal', not 'generic').
     var first = title.split(' ')[0];
-    if (first && idx.byKey.has(first) && ambOf(idx, first) !== 'generic') return idx.byKey.get(first);
+    if (first && idx.byKey.has(first) && ambOf(idx, first) !== 'generic' && allowsLeadingTitle(first, title)) return idx.byKey.get(first);
     // 6) Long normal single-word brand anywhere.
     for (var j = 0; j < idx.single.length; j++) {
       if (padded.indexOf(' ' + idx.single[j] + ' ') !== -1) return idx.byKey.get(idx.single[j]);
