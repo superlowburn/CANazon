@@ -19,7 +19,7 @@ test('uses CANazon for product-facing branding', async () => {
 test('README gives ZIP installation instructions', async () => {
   const readme = await readFile(new URL('README.md', root), 'utf8');
 
-  assert.match(readme, /CANazon-0\.1\.0\.zip/);
+  assert.match(readme, /CANazon-0\.1\.1\.zip/);
   assert.match(readme, /Load unpacked/);
   assert.match(readme, /manifest\.json/);
 });
