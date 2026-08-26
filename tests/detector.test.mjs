@@ -39,6 +39,23 @@ t('Canadian single-word leading title (Royale toilet paper)', () => {
   assert.strictEqual(D.classify('', 'Royale Velour Toilet Paper, 12 Equal 24 Rolls').state, 'canadian');
 });
 
+t("Stanfield's byline -> Canadian-owned, made abroad", () => {
+  const r = D.classify("Stanfield's", "Stanfield's Men's Premium Crew Neck T-Shirt");
+  assert.strictEqual(r.state, 'canadian');
+  assert.strictEqual(r.name, 'Stanfields');
+  assert.strictEqual(r.madeInCanada, false);
+});
+
+t('Stanfields leading title -> Canadian-owned, made abroad', () => {
+  const r = D.classify('', "Stanfield’s Men’s Premium Long Sleeve Shirt");
+  assert.strictEqual(r.state, 'canadian');
+  assert.strictEqual(r.madeInCanada, false);
+});
+
+t('Stanfields inside an unrelated book title stays neutral', () => {
+  assert.strictEqual(D.classify('', 'The Last of the Stanfields: A Novel'), null);
+});
+
 // --- US (frost) ---
 t('US auto brand -> us (Charmin)', () => {
   assert.strictEqual(D.classify('Charmin', 'Charmin Toilet Paper Ultra Soft').state, 'us');
@@ -54,6 +71,13 @@ t('US multi-word brand mid-title (Betty Crocker)', () => {
 
 t('Amazon Basics -> us', () => {
   assert.strictEqual(D.classify('Amazon Basics', 'Amazon Basics 2-Ply Soft Toilet Paper').state, 'us');
+});
+
+t('Hanes apparel -> recognized American', () => {
+  const r = D.classify('', "Hanes Men's Beefy T-Shirt");
+  assert.strictEqual(r.state, 'us');
+  assert.strictEqual(r.name, 'Hanes');
+  assert.strictEqual(r.madeInUSA, false);
 });
 
 // --- Made in USA (verified) ---
