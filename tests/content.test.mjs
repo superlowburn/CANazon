@@ -59,6 +59,36 @@ function element(tagName) {
   return node;
 }
 
+function matchesFixture(node, selector) {
+  var not = selector.match(/:not\(\[([^=\]]+)="([^"]*)"\]\)/);
+  if (not && node.getAttribute(not[1]) === not[2]) return false;
+  var plain = selector.replace(/:not\([^)]*\)/g, '');
+  var tag = plain.match(/^[a-z]+/i);
+  if (tag && node.tagName !== tag[0].toUpperCase()) return false;
+  var classes = plain.match(/\.[\w-]+/g) || [];
+  if (classes.some((name) => !node.classList.contains(name.slice(1)))) return false;
+  var attributes = plain.matchAll(/\[([^\]^*=]+)(?:([*^]?=)"([^"]*)")?\]/g);
+  for (const [, name, operator, value] of attributes) {
+    var actual = node.getAttribute(name);
+    if (actual === null) return false;
+    if (operator === '=' && actual !== value) return false;
+    if (operator === '^=' && !actual.startsWith(value)) return false;
+    if (operator === '*=' && !actual.includes(value)) return false;
+  }
+  return true;
+}
+
+function configuredFixtureTiles(nodes) {
+  const context = {};
+  vm.runInNewContext(configSource, context);
+  const candidateSet = new Set();
+  context.TN_CONFIG.tileSelectors.forEach((selector) => nodes.forEach((node) => {
+    if (matchesFixture(node, selector)) candidateSet.add(node);
+  }));
+  const candidates = Array.from(candidateSet);
+  return candidates.filter((tile) => !candidates.some((parent) => parent !== tile && parent.contains(tile)));
+}
+
 function contentHarness({ hydrated, pageType = 'search', state = 'us', madeInCanada = true, madeInUSA = false, sponsored = false }) {
   let titlesReady = hydrated;
   let title = 'Amazon Basics Cast Iron Skillet';
@@ -134,9 +164,7 @@ function contentHarness({ hydrated, pageType = 'search', state = 'us', madeInCan
                   ? 'div[data-testid="deal-card"]'
                   : pageType === 'grocery'
                     ? 'div[data-asin][data-index]:not([data-asin=""])'
-                    : pageType === 'banner'
-                      ? null
-                      : 'div[data-component-type="s-search-result"]';
+                    : 'div[data-component-type="s-search-result"]';
         return selector === tileSelector ? [tile] : [];
       },
       querySelector(selector) {
@@ -241,12 +269,34 @@ test('processes Amazon grocery landing product cards', () => {
   assert.equal(page.tile.classList.contains('tn-frost'), true);
 });
 
-test('ignores non-product banner shapes', () => {
-  const page = contentHarness({ hydrated: true, pageType: 'banner' });
+test('configured selectors match product cards but not promos, and keep nested cards canonical', () => {
+  const home = element('div');
+  home.setAttribute('data-a-card-type', 'product');
+  const deal = element('div');
+  deal.setAttribute('data-testid', 'deal-card');
+  const grocery = element('div');
+  grocery.setAttribute('data-asin', 'B012345678');
+  grocery.setAttribute('data-index', '4');
+  const promo = element('div');
+  promo.setAttribute('data-a-card-type', 'promo');
+  const outer = element('div');
+  outer.setAttribute('data-a-card-type', 'product');
+  outer.setAttribute('data-asin', 'B000000001');
+  outer.setAttribute('data-index', '0');
+  const nested = element('div');
+  nested.setAttribute('data-asin', 'B087654321');
+  nested.setAttribute('data-index', '1');
+  outer.appendChild(nested);
 
-  assert.equal(page.processed(), null);
-  assert.equal(page.overlay(), null);
-  assert.equal(page.badge(), null);
+  const matched = configuredFixtureTiles([home, deal, grocery, promo, outer, nested]);
+
+  assert.equal(matched.length, 4);
+  assert.ok(matched.includes(home));
+  assert.ok(matched.includes(deal));
+  assert.ok(matched.includes(grocery));
+  assert.ok(matched.includes(outer));
+  assert.equal(matched.includes(promo), false);
+  assert.equal(matched.includes(nested), false);
 });
 
 test('processes only the outer card when product selectors overlap or nest', () => {
