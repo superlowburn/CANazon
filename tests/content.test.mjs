@@ -109,8 +109,11 @@ function contentHarness({ hydrated, pageType = 'search', state = 'us', madeInCan
         (selector === 'h2 a span' || selector === 'h2 span' || selector === 'h2')) {
       return titlesReady ? { textContent: title } : null;
     }
-    if ((pageType === 'best-sellers' || pageType === 'sponsored-section' || pageType === 'homepage' || pageType === 'homepage-live' || pageType === 'deals' || pageType === 'generic-asin') &&
+    if ((pageType === 'best-sellers' || pageType === 'sponsored-section' || pageType === 'homepage' || pageType === 'homepage-live' || pageType === 'deals' || pageType === 'category-carousel' || pageType === 'generic-asin') &&
         selector === 'a.a-link-normal[href*="/dp/"]:not([aria-hidden="true"])') {
+      return titlesReady ? { textContent: title } : null;
+    }
+    if (pageType === 'deals-live' && selector === '[data-testid="product-card-link"]') {
       return titlesReady ? { textContent: title } : null;
     }
     if (pageType === 'category' && selector === '.octopus-pc-asin-title') {
@@ -164,9 +167,13 @@ function contentHarness({ hydrated, pageType = 'search', state = 'us', madeInCan
                   ? '[data-csa-c-item-type="asin"][data-csa-c-type="item"][data-csa-c-owner="Homepage"]'
                   : pageType === 'deals'
                     ? 'div[data-testid="deal-card"]'
-                    : pageType === 'generic-asin'
-                      ? 'div[data-asin][data-index]:not([data-asin=""])'
-                      : 'div[data-component-type="s-search-result"]';
+                    : pageType === 'deals-live'
+                      ? '[data-testid="product-card"][data-csa-c-owner="DealsX"]'
+                      : pageType === 'category-carousel'
+                        ? '.acsProductBlockV1[data-asin]:not([data-asin=""])'
+                        : pageType === 'generic-asin'
+                          ? 'div[data-asin][data-index]:not([data-asin=""])'
+                          : 'div[data-component-type="s-search-result"]';
         return selector === tileSelector ? [tile] : [];
       },
       querySelector(selector) {
@@ -264,6 +271,20 @@ test('processes Amazon Deals product cards', () => {
   assert.equal(page.tile.classList.contains('tn-frost'), true);
 });
 
+test('processes observed DealsX product cards through their product-card link', () => {
+  const page = contentHarness({ hydrated: true, pageType: 'deals-live' });
+
+  assert.equal(page.processed(), '1');
+  assert.equal(page.tile.classList.contains('tn-frost'), true);
+});
+
+test('processes observed category carousel product cards', () => {
+  const page = contentHarness({ hydrated: true, pageType: 'category-carousel' });
+
+  assert.equal(page.processed(), '1');
+  assert.equal(page.tile.classList.contains('tn-frost'), true);
+});
+
 test('does not process generic data-asin/index nodes', () => {
   const page = contentHarness({ hydrated: true, pageType: 'generic-asin' });
 
@@ -293,6 +314,21 @@ test('configured selectors match product cards but not promos, and keep nested c
   otherOwnerAsin.setAttribute('data-csa-c-type', 'item');
   const deal = element('div');
   deal.setAttribute('data-testid', 'deal-card');
+  const dealsX = element('div');
+  dealsX.setAttribute('data-testid', 'product-card');
+  dealsX.setAttribute('data-csa-c-owner', 'DealsX');
+  dealsX.setAttribute('data-csa-c-item-type', 'deal');
+  dealsX.setAttribute('data-csa-c-type', 'item');
+  const otherDealOwner = element('div');
+  otherDealOwner.setAttribute('data-testid', 'product-card');
+  otherDealOwner.setAttribute('data-csa-c-owner', 'Recommendation');
+  const carousel = element('div');
+  carousel.className = 'acsProductBlockV1';
+  carousel.setAttribute('data-asin', 'B012345678');
+  carousel.setAttribute('data-default-order', '4');
+  const blankCarousel = element('div');
+  blankCarousel.className = 'acsProductBlockV1';
+  blankCarousel.setAttribute('data-asin', '');
   const genericAsin = element('div');
   genericAsin.setAttribute('data-asin', 'B012345678');
   genericAsin.setAttribute('data-index', '4');
@@ -307,15 +343,19 @@ test('configured selectors match product cards but not promos, and keep nested c
   nested.setAttribute('data-testid', 'deal-card');
   outer.appendChild(nested);
 
-  const matched = configuredFixtureTiles([home, liveHome, otherOwnerAsin, deal, genericAsin, promo, outer, nested]);
+  const matched = configuredFixtureTiles([home, liveHome, otherOwnerAsin, deal, dealsX, otherDealOwner, carousel, blankCarousel, genericAsin, promo, outer, nested]);
 
-  assert.equal(matched.length, 4);
+  assert.equal(matched.length, 6);
   assert.ok(matched.includes(home));
   assert.ok(matched.includes(liveHome));
   assert.ok(matched.includes(deal));
+  assert.ok(matched.includes(dealsX));
+  assert.ok(matched.includes(carousel));
   assert.ok(matched.includes(outer));
   assert.equal(matched.includes(promo), false);
   assert.equal(matched.includes(otherOwnerAsin), false);
+  assert.equal(matched.includes(otherDealOwner), false);
+  assert.equal(matched.includes(blankCarousel), false);
   assert.equal(matched.includes(genericAsin), false);
   assert.equal(matched.includes(nested), false);
 });

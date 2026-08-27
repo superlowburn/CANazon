@@ -8,16 +8,19 @@ globalThis.TN_CONFIG = {
     'div[id^="gridItemRoot"]',
     'li.octopus-pc-item',
     'div[id^="CardInstance"].sb-video-creative',
-    // Product-only cards used by known Amazon.ca home and Deals layouts.
+    // Product-only cards used by observed Amazon.ca home, Deals, and carousel layouts.
     'div[data-a-card-type="product"]',
     '[data-csa-c-item-type="asin"][data-csa-c-type="item"][data-csa-c-owner="Homepage"]',
     'div[data-testid="deal-card"]',
+    '[data-testid="product-card"][data-csa-c-owner="DealsX"]',
+    '.acsProductBlockV1[data-asin]:not([data-asin=""])',
   ],
   // Product title text inside a tile (first match wins).
   titleSelectors: [
     'h2 a span',
     'h2 span',
     'h2',
+    '[data-testid="product-card-link"]',
     'a.a-link-normal[href*="/dp/"]:not([aria-hidden="true"])',
     '.octopus-pc-asin-title',
   ],
