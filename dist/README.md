@@ -14,16 +14,16 @@ CANazon is a small Chrome extension that makes Canadian brands easier to spot wh
 
 ![CANazon highlighting a Canadian product and frosting an American product on Amazon](store-assets/CANazon-store-screenshot-1280x800.png)
 
-## Install version 0.2 from the ZIP
+## Install version 0.3 from the ZIP
 
 Chrome cannot install the ZIP directly. Unzip it first.
 
-1. Download [`CANazon-0.2.zip`](CANazon-0.2.zip).
+1. Download [`CANazon-0.3.zip`](CANazon-0.3.zip).
 2. Double-click the ZIP to extract it.
 3. Open `chrome://extensions` in Chrome.
 4. Turn on **Developer mode**.
 5. Click **Load unpacked**.
-6. Select the extracted `CANazon-0.2` folder—the folder containing `manifest.json`.
+6. Select the extracted `CANazon-0.3` folder—the folder containing `manifest.json`.
 7. Open or refresh an Amazon page.
 
 To update CANazon later, replace the extracted folder with the new version and click **Reload** on the CANazon card in `chrome://extensions`.

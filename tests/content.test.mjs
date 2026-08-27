@@ -52,6 +52,9 @@ function element(tagName) {
     getAttribute(name) {
       return node.attributes[name]?.value ?? null;
     },
+    removeAttribute(name) {
+      delete node.attributes[name];
+    },
     attributes: {},
     listeners: {},
   };
@@ -97,15 +100,17 @@ function contentHarness({ hydrated, pageType = 'search', state = 'us', madeInCan
   let messageListener;
   let reports = 0;
   let classifications = 0;
+  let nestedReady = false;
   const tile = element('div');
   const nested = element('div');
   const inserted = [];
   const resultsRoot = { parentNode: { insertBefore(node) { inserted.push(node); } } };
 
   if (pageType === 'nested') tile.appendChild(nested);
+  tile.setAttribute('data-asin', 'B000000001');
 
   tile.querySelector = (selector) => {
-    if ((pageType === 'search' || pageType === 'nested') &&
+    if ((pageType === 'search' || pageType === 'nested' || pageType === 'dynamic-nested') &&
         (selector === 'h2 a span' || selector === 'h2 span' || selector === 'h2')) {
       return titlesReady ? { textContent: title } : null;
     }
@@ -152,6 +157,11 @@ function contentHarness({ hydrated, pageType = 'search', state = 'us', madeInCan
       readyState: 'complete',
       body: {},
       querySelectorAll(selector) {
+        if (pageType === 'dynamic-nested') {
+          if (selector === 'div[data-a-card-type="product"]') return nestedReady ? [nested] : [];
+          if (selector === 'div[data-component-type="s-search-result"]') return [tile];
+          return [];
+        }
         if (pageType === 'nested') {
           if (selector === 'div[data-a-card-type="product"]') return [tile];
           if (selector === '[data-csa-c-item-type="asin"][data-csa-c-type="item"][data-csa-c-owner="Homepage"]') return [tile, nested];
@@ -218,7 +228,9 @@ function contentHarness({ hydrated, pageType = 'search', state = 'us', madeInCan
     setProduct(next) {
       title = next.title ?? title;
       brand = next.brand ?? brand;
+      if (next.asin) tile.setAttribute('data-asin', next.asin);
     },
+    wrapCard() { nested.appendChild(tile); nestedReady = true; },
     reveal() { tile.querySelector('.tn-reveal')?.click(); },
     removeBadge() { const badge = tile.querySelector('.tn-badge'); if (badge) tile.removeChild(badge); },
     removeOverlay() { const overlay = tile.querySelector('.tn-overlay'); if (overlay) tile.removeChild(overlay); },
@@ -370,6 +382,17 @@ test('processes only the outer card when product selectors overlap or nest', () 
   assert.equal(page.nested.getAttribute('data-tn-done'), null);
 });
 
+test('clears state from a card that becomes nested inside a matching wrapper', async () => {
+  const page = contentHarness({ hydrated: true, pageType: 'dynamic-nested' });
+  assert.equal(page.tile.classList.contains('tn-frost'), true);
+
+  page.wrapCard();
+  page.mutate([page.nested]);
+  await new Promise((resolve) => setTimeout(resolve, 300));
+
+  assert.equal(page.tile.classList.contains('tn-frost'), false);
+});
+
 test('adds a red X marker to American frost', () => {
   const page = contentHarness({ hydrated: true });
   const overlay = page.overlay();
@@ -516,6 +539,26 @@ test('re-frosts a recycled American card after revealing its previous product', 
 
   assert.ok(page.overlay());
   assert.equal(page.counts().us, 1);
+});
+
+test('re-frosts a recycled card when its ASIN changes but its text does not', async () => {
+  const page = contentHarness({ hydrated: true });
+
+  page.reveal();
+  page.setProduct({ asin: 'B000000002' });
+  page.mutate([element('span')]);
+  await new Promise((resolve) => setTimeout(resolve, 300));
+
+  assert.ok(page.overlay());
+  assert.equal(page.counts().us, 1);
+});
+
+test('updates the reported American count immediately after reveal', () => {
+  const page = contentHarness({ hydrated: true });
+
+  page.reveal();
+
+  assert.equal(page.counts().us, 0);
 });
 
 test('keeps a legitimately revealed American card unfrosted on unrelated mutations', async () => {

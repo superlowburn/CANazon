@@ -19,6 +19,7 @@
   var cfg = globalThis.TN_CONFIG;
   var revealed = new WeakSet(); // tiles the user un-frosted this session
   var tileState = new WeakMap(); // last title, brand, mode, and classification per tile
+  var activeTiles = new Set(); // canonical tiles from the previous scan
   var counts = { total: 0, canadian: 0, us: 0 };
   var mode = 'canadian-first';
 
@@ -61,6 +62,7 @@
       revealed.add(tile);
       tile.classList.remove(cfg.frostClass);
       if (ov.parentNode) ov.parentNode.removeChild(ov);
+      scan();
     });
     if (!label) ov.appendChild(x);
     ov.appendChild(pill);
@@ -124,6 +126,15 @@
   function scan(force) {
     counts = { total: 0, canadian: 0, us: 0 };
     var list = tiles();
+    var currentTiles = new Set(list);
+    activeTiles.forEach(function (tile) {
+      if (currentTiles.has(tile)) return;
+      clearMarks(tile);
+      tile.removeAttribute(cfg.processedAttr);
+      tileState.delete(tile);
+      revealed.delete(tile);
+    });
+    activeTiles = currentTiles;
     list.forEach(function (tile) {
       // Only real result rows with content.
       var title = firstText(tile, cfg.titleSelectors);
@@ -132,7 +143,8 @@
 
       var brand = firstText(tile, cfg.brandSelectors);
       var key = mode + '\u0000' + title + '\u0000' + brand;
-      var productKey = title + '\u0000' + brand;
+      var productId = tile.getAttribute('data-asin') || tile.getAttribute('data-csa-c-item-id') || '';
+      var productKey = productId + '\u0000' + title + '\u0000' + brand;
       var previous = tileState.get(tile);
       if (previous && previous.productKey !== productKey) revealed.delete(tile);
       if (!force && previous && previous.key === key && marksMatch(tile, previous.entry)) {
