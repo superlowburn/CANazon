@@ -50,11 +50,14 @@ function element(tagName) {
   return node;
 }
 
-function contentHarness({ hydrated, pageType = 'search', state = 'us', madeInCanada = true, sponsored = false }) {
+function contentHarness({ hydrated, pageType = 'search', state = 'us', madeInCanada = true, madeInUSA = false, sponsored = false }) {
   let titlesReady = hydrated;
+  let title = 'Amazon Basics Cast Iron Skillet';
+  let brand = '';
   let mutationCallback;
   let messageListener;
   let reports = 0;
+  let classifications = 0;
   const tile = element('div');
   const inserted = [];
   const resultsRoot = { parentNode: { insertBefore(node) { inserted.push(node); } } };
@@ -62,15 +65,16 @@ function contentHarness({ hydrated, pageType = 'search', state = 'us', madeInCan
   tile.querySelector = (selector) => {
     if (pageType === 'search' &&
         (selector === 'h2 a span' || selector === 'h2 span' || selector === 'h2')) {
-      return titlesReady ? { textContent: 'Amazon Basics Cast Iron Skillet' } : null;
+      return titlesReady ? { textContent: title } : null;
     }
-    if ((pageType === 'best-sellers' || pageType === 'sponsored-section') &&
+    if ((pageType === 'best-sellers' || pageType === 'sponsored-section' || pageType === 'homepage' || pageType === 'deals' || pageType === 'grocery') &&
         selector === 'a.a-link-normal[href*="/dp/"]:not([aria-hidden="true"])') {
-      return titlesReady ? { textContent: 'Nespresso Vertuo Coffee Pods' } : null;
+      return titlesReady ? { textContent: title } : null;
     }
     if (pageType === 'category' && selector === '.octopus-pc-asin-title') {
-      return titlesReady ? { textContent: 'Amazon Basics Shower Curtain' } : null;
+      return titlesReady ? { textContent: title } : null;
     }
+    if (selector === '.s-line-clamp-1') return brand ? { textContent: brand } : null;
     if (selector === '.tn-overlay') {
       return tile.children.find((child) => child.classList.contains('tn-overlay')) ?? null;
     }
@@ -86,9 +90,10 @@ function contentHarness({ hydrated, pageType = 'search', state = 'us', madeInCan
     TNDetector: {
       init() {},
       classify() {
+        classifications++;
         return state === 'canadian'
           ? { state: 'canadian', madeInCanada, name: 'Test Canada', tags: [] }
-          : state === 'us' ? { state: 'us', madeInUSA: false, name: 'Test USA' } : null;
+          : state === 'us' ? { state: 'us', madeInUSA, name: 'Test USA' } : null;
       },
     },
     document: {
@@ -100,9 +105,15 @@ function contentHarness({ hydrated, pageType = 'search', state = 'us', madeInCan
           ? 'div[id^="gridItemRoot"]'
           : pageType === 'sponsored-section'
             ? 'div[id^="CardInstance"].sb-video-creative'
-          : pageType === 'category'
-            ? 'li.octopus-pc-item'
-            : 'div[data-component-type="s-search-result"]';
+            : pageType === 'category'
+              ? 'li.octopus-pc-item'
+              : pageType === 'homepage'
+                ? 'div[data-a-card-type="product"]'
+                : pageType === 'deals'
+                  ? 'div[data-testid="deal-card"]'
+                  : pageType === 'grocery'
+                    ? 'div[data-asin][data-index]:not([data-asin=""])'
+                    : 'div[data-component-type="s-search-result"]';
         return selector === tileSelector ? [tile] : [];
       },
       querySelector(selector) {
@@ -137,8 +148,13 @@ function contentHarness({ hydrated, pageType = 'search', state = 'us', madeInCan
     badge() { return tile.querySelector('.tn-badge'); },
     processed() { return tile.getAttribute('data-tn-done'); },
     reports() { return reports; },
+    classifications() { return classifications; },
     toolbar() { return inserted[0] ?? null; },
     setMode(mode) { messageListener({ type: 'tn-set-mode', mode }, null, function () {}); },
+    setProduct(next) {
+      title = next.title ?? title;
+      brand = next.brand ?? brand;
+    },
     tile,
   };
 }
@@ -176,11 +192,47 @@ test('processes Amazon category product cards', () => {
   assert.equal(page.tile.classList.contains('tn-frost'), true);
 });
 
+test('processes Amazon homepage product cards', () => {
+  const page = contentHarness({ hydrated: true, pageType: 'homepage' });
+
+  assert.equal(page.processed(), '1');
+  assert.equal(page.tile.classList.contains('tn-frost'), true);
+});
+
+test('processes Amazon Deals product cards', () => {
+  const page = contentHarness({ hydrated: true, pageType: 'deals' });
+
+  assert.equal(page.processed(), '1');
+  assert.equal(page.tile.classList.contains('tn-frost'), true);
+});
+
+test('processes Amazon grocery landing product cards', () => {
+  const page = contentHarness({ hydrated: true, pageType: 'grocery' });
+
+  assert.equal(page.processed(), '1');
+  assert.equal(page.tile.classList.contains('tn-frost'), true);
+});
+
 test('adds a red X marker to American frost', () => {
   const page = contentHarness({ hydrated: true });
   const overlay = page.overlay();
 
   assert.ok(overlay.children.some((child) => child.classList.contains('tn-us-x')));
+});
+
+test('uses one American-owned reveal control without an overlapping US badge', () => {
+  const page = contentHarness({ hydrated: true, state: 'us' });
+
+  assert.equal(page.badge(), null);
+  assert.equal(page.overlay().children.filter((child) => child.classList.contains('tn-reveal')).length, 1);
+  assert.equal(page.overlay().children.find((child) => child.classList.contains('tn-reveal')).textContent, 'American-owned · Reveal');
+});
+
+test('uses the made-in-USA wording in its single reveal control', () => {
+  const page = contentHarness({ hydrated: true, state: 'us', madeInUSA: true });
+
+  assert.equal(page.badge(), null);
+  assert.equal(page.overlay().children.find((child) => child.classList.contains('tn-reveal')).textContent, 'Made in USA · Reveal');
 });
 
 test('adds a filled-state maple leaf marker to made-in-Canada cards', () => {
@@ -247,7 +299,8 @@ test('labels-only mode keeps Amazon order while frosting American-owned products
 
   assert.equal(page.tile.style.order, '');
   assert.equal(page.tile.classList.contains('tn-frost'), true);
-  assert.equal(page.badge().children[1].textContent, 'American-owned');
+  assert.equal(page.badge(), null);
+  assert.equal(page.overlay().children.find((child) => child.classList.contains('tn-reveal')).textContent, 'American-owned · Reveal');
 });
 
 test('paused mode leaves Amazon unchanged', () => {
@@ -270,4 +323,27 @@ test('ignores its own overlay mutation', async () => {
   await new Promise((resolve) => setTimeout(resolve, 300));
 
   assert.equal(page.reports(), 1);
+});
+
+test('does not rebuild an unchanged card after an unrelated Amazon mutation', async () => {
+  const page = contentHarness({ hydrated: true });
+  const overlay = page.overlay();
+
+  page.mutate([element('span')]);
+  await new Promise((resolve) => setTimeout(resolve, 300));
+
+  assert.equal(page.classifications(), 1);
+  assert.equal(page.overlay(), overlay);
+});
+
+test('reclassifies a recycled card when its product title changes', async () => {
+  const page = contentHarness({ hydrated: true });
+  const oldOverlay = page.overlay();
+
+  page.setProduct({ title: 'Charmin Ultra Soft Toilet Paper' });
+  page.mutate([element('span')]);
+  await new Promise((resolve) => setTimeout(resolve, 300));
+
+  assert.equal(page.classifications(), 2);
+  assert.notEqual(page.overlay(), oldOverlay);
 });

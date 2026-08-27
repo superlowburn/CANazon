@@ -18,6 +18,7 @@
 
   var cfg = globalThis.TN_CONFIG;
   var revealed = new WeakSet(); // tiles the user un-frosted this session
+  var tileState = new WeakMap(); // last title, brand, mode, and classification per tile
   var counts = { total: 0, canadian: 0, us: 0 };
   var mode = 'canadian-first';
 
@@ -50,7 +51,7 @@
     var pill = document.createElement('button');
     pill.className = 'tn-reveal';
     pill.type = 'button';
-    pill.textContent = label || (madeInUSA ? 'Made in USA · Reveal' : 'American · Reveal');
+    pill.textContent = label || (madeInUSA ? 'Made in USA · Reveal' : 'American-owned · Reveal');
     pill.addEventListener('click', function (e) {
       e.preventDefault();
       e.stopPropagation();
@@ -100,7 +101,13 @@
     tile.style.order = '';
   }
 
-  function scan() {
+  function count(entry, tile) {
+    if (!entry) return;
+    if (entry.state === 'canadian') counts.canadian++;
+    else if (entry.state === 'us' && !revealed.has(tile)) counts.us++;
+  }
+
+  function scan(force) {
     counts = { total: 0, canadian: 0, us: 0 };
     var list = tiles();
     list.forEach(function (tile) {
@@ -109,12 +116,23 @@
       if (!title) return;
       counts.total++;
 
-      if (mode === 'paused') { clearMarks(tile); return; }
+      var brand = firstText(tile, cfg.brandSelectors);
+      var key = mode + '\u0000' + title + '\u0000' + brand;
+      var previous = tileState.get(tile);
+      if (!force && previous && previous.key === key) {
+        count(previous.entry, tile);
+        return;
+      }
+
+      if (mode === 'paused') {
+        clearMarks(tile);
+        tileState.set(tile, { key: key, entry: null });
+        return;
+      }
 
       // Reset prior marks before re-deciding (layout can recycle nodes).
       clearMarks(tile);
 
-      var brand = firstText(tile, cfg.brandSelectors);
       var v = globalThis.TNDetector.classify(brand, title);
 
       if (v && v.state === 'canadian') {
@@ -123,12 +141,12 @@
         badge(tile, v);
       } else if (v && v.state === 'us') {
         tile.style.order = mode === 'canadian-first' ? '2' : '';
-        badge(tile, v);
         if (!revealed.has(tile)) { counts.us++; frost(tile, v.madeInUSA); }
       } else {
         tile.style.order = mode === 'canadian-first' ? '1' : '';
         badge(tile, { unknown: true });
       }
+      tileState.set(tile, { key: key, entry: v });
       tile.setAttribute(cfg.processedAttr, '1');
     });
     report();
@@ -172,8 +190,8 @@
   chrome.runtime.onMessage.addListener(function (msg, _sender, sendResponse) {
     if (!msg) return;
     if (msg.type === 'tn-get-counts') { sendResponse({ counts: counts, mode: mode }); return true; }
-    if (msg.type === 'tn-set-mode') { mode = msg.mode || 'canadian-first'; scan(); sendResponse({ ok: true }); return true; }
-    if (msg.type === 'tn-set-enabled') { mode = msg.enabled ? 'canadian-first' : 'paused'; scan(); sendResponse({ ok: true }); return true; }
+    if (msg.type === 'tn-set-mode') { mode = msg.mode || 'canadian-first'; scan(true); sendResponse({ ok: true }); return true; }
+    if (msg.type === 'tn-set-enabled') { mode = msg.enabled ? 'canadian-first' : 'paused'; scan(true); sendResponse({ ok: true }); return true; }
   });
 
   function ready() {
@@ -184,7 +202,7 @@
   if (chrome.storage && chrome.storage.sync) {
     chrome.storage.sync.get({ mode: 'canadian-first' }, function (saved) { mode = saved.mode; ready(); });
     chrome.storage.onChanged.addListener(function (changes, area) {
-      if (area === 'sync' && changes.mode) { mode = changes.mode.newValue; scan(); }
+      if (area === 'sync' && changes.mode) { mode = changes.mode.newValue; scan(true); }
     });
   } else ready();
 })();

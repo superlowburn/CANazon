@@ -8,6 +8,10 @@ globalThis.TN_CONFIG = {
     'div[id^="gridItemRoot"]',
     'li.octopus-pc-item',
     'div[id^="CardInstance"].sb-video-creative',
+    // Product-only cards used by Amazon.ca home, Deals, and category landings.
+    'div[data-a-card-type="product"]',
+    'div[data-testid="deal-card"]',
+    'div[data-asin][data-index]:not([data-asin=""])',
   ],
   // Product title text inside a tile (first match wins).
   titleSelectors: [

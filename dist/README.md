@@ -30,7 +30,7 @@ To update CANazon later, replace the extracted folder with the new version and c
 
 ## Where it works
 
-CANazon currently handles Amazon search results, category grids, and category-specific Best Sellers pages. Some homepage, Deals, storefront, and recommendation cards are not supported yet.
+CANazon handles Amazon search results, category grids, category-specific Best Sellers pages, and the standard product cards on Amazon.ca home and Deals pages. Storefront and recommendation cards may not be supported yet.
 
 Brand matching is based on bundled title and brand lists. It is a shopping aid, not a guarantee of ownership or manufacturing origin.
 
