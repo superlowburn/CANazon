@@ -35,7 +35,10 @@
     cfg.tileSelectors.forEach(function (sel) {
       document.querySelectorAll(sel).forEach(function (n) { set.add(n); });
     });
-    return Array.from(set);
+    var list = Array.from(set);
+    return list.filter(function (tile) {
+      return !list.some(function (parent) { return parent !== tile && parent.contains(tile); });
+    });
   }
 
   // Build the frost overlay + reveal pill for a tile.
@@ -107,6 +110,17 @@
     else if (entry.state === 'us' && !revealed.has(tile)) counts.us++;
   }
 
+  function marksMatch(tile, entry) {
+    var overlay = tile.querySelector('.tn-overlay');
+    var badgeEl = tile.querySelector('.tn-badge');
+    if (!entry) return !overlay && !badgeEl && !tile.classList.contains(cfg.frostClass) && !tile.classList.contains(cfg.canadianClass);
+    if (entry.state === 'canadian') return !!badgeEl && tile.classList.contains(cfg.canadianClass);
+    if (entry.state === 'us') return revealed.has(tile)
+      ? !overlay && !tile.classList.contains(cfg.frostClass)
+      : !!overlay && tile.classList.contains(cfg.frostClass);
+    return !!badgeEl;
+  }
+
   function scan(force) {
     counts = { total: 0, canadian: 0, us: 0 };
     var list = tiles();
@@ -118,15 +132,17 @@
 
       var brand = firstText(tile, cfg.brandSelectors);
       var key = mode + '\u0000' + title + '\u0000' + brand;
+      var productKey = title + '\u0000' + brand;
       var previous = tileState.get(tile);
-      if (!force && previous && previous.key === key) {
+      if (previous && previous.productKey !== productKey) revealed.delete(tile);
+      if (!force && previous && previous.key === key && marksMatch(tile, previous.entry)) {
         count(previous.entry, tile);
         return;
       }
 
       if (mode === 'paused') {
         clearMarks(tile);
-        tileState.set(tile, { key: key, entry: null });
+        tileState.set(tile, { key: key, productKey: productKey, entry: null });
         return;
       }
 
@@ -134,6 +150,7 @@
       clearMarks(tile);
 
       var v = globalThis.TNDetector.classify(brand, title);
+      var entry = v || { state: 'unknown' };
 
       if (v && v.state === 'canadian') {
         counts.canadian++;
@@ -146,7 +163,7 @@
         tile.style.order = mode === 'canadian-first' ? '1' : '';
         badge(tile, { unknown: true });
       }
-      tileState.set(tile, { key: key, entry: v });
+      tileState.set(tile, { key: key, productKey: productKey, entry: entry });
       tile.setAttribute(cfg.processedAttr, '1');
     });
     report();

@@ -37,7 +37,15 @@ function element(tagName) {
       node.children = node.children.filter((candidate) => candidate !== child);
       child.parentNode = null;
     },
-    addEventListener() {},
+    addEventListener(type, listener) {
+      node.listeners[type] = listener;
+    },
+    click() {
+      node.listeners.click?.({ preventDefault() {}, stopPropagation() {} });
+    },
+    contains(candidate) {
+      return node.children.some((child) => child === candidate || child.contains?.(candidate));
+    },
     setAttribute(name, value) {
       node.attributes[name] = { value };
     },
@@ -45,6 +53,7 @@ function element(tagName) {
       return node.attributes[name]?.value ?? null;
     },
     attributes: {},
+    listeners: {},
   };
   node.classList = classListFor(node);
   return node;
@@ -59,11 +68,14 @@ function contentHarness({ hydrated, pageType = 'search', state = 'us', madeInCan
   let reports = 0;
   let classifications = 0;
   const tile = element('div');
+  const nested = element('div');
   const inserted = [];
   const resultsRoot = { parentNode: { insertBefore(node) { inserted.push(node); } } };
 
+  if (pageType === 'nested') tile.appendChild(nested);
+
   tile.querySelector = (selector) => {
-    if (pageType === 'search' &&
+    if ((pageType === 'search' || pageType === 'nested') &&
         (selector === 'h2 a span' || selector === 'h2 span' || selector === 'h2')) {
       return titlesReady ? { textContent: title } : null;
     }
@@ -78,12 +90,16 @@ function contentHarness({ hydrated, pageType = 'search', state = 'us', madeInCan
     if (selector === '.tn-overlay') {
       return tile.children.find((child) => child.classList.contains('tn-overlay')) ?? null;
     }
+    if (selector === '.tn-reveal') {
+      return tile.children.find((child) => child.classList.contains('tn-overlay'))?.children.find((child) => child.classList.contains('tn-reveal')) ?? null;
+    }
     if (selector === '.tn-badge') {
       return tile.children.find((child) => child.classList.contains('tn-badge')) ?? null;
     }
     if (selector === '.puis-sponsored-label-text, [class*="ad-feedback-text"]') return sponsored ? element('span') : null;
     return null;
   };
+  nested.querySelector = tile.querySelector;
 
   const context = {
     console: { log() {} },
@@ -100,6 +116,11 @@ function contentHarness({ hydrated, pageType = 'search', state = 'us', madeInCan
       readyState: 'complete',
       body: {},
       querySelectorAll(selector) {
+        if (pageType === 'nested') {
+          if (selector === 'div[data-a-card-type="product"]') return [tile];
+          if (selector === 'div[data-asin][data-index]:not([data-asin=""])') return [tile, nested];
+          return [];
+        }
         if (!titlesReady) return [];
         var tileSelector = pageType === 'best-sellers'
           ? 'div[id^="gridItemRoot"]'
@@ -113,7 +134,9 @@ function contentHarness({ hydrated, pageType = 'search', state = 'us', madeInCan
                   ? 'div[data-testid="deal-card"]'
                   : pageType === 'grocery'
                     ? 'div[data-asin][data-index]:not([data-asin=""])'
-                    : 'div[data-component-type="s-search-result"]';
+                    : pageType === 'banner'
+                      ? null
+                      : 'div[data-component-type="s-search-result"]';
         return selector === tileSelector ? [tile] : [];
       },
       querySelector(selector) {
@@ -126,7 +149,7 @@ function contentHarness({ hydrated, pageType = 'search', state = 'us', madeInCan
     },
     chrome: {
       runtime: {
-        sendMessage() { reports += 1; },
+        sendMessage(message) { reports += 1; context.lastCounts = message.counts; },
         onMessage: { addListener(listener) { messageListener = listener; } },
       },
     },
@@ -148,6 +171,7 @@ function contentHarness({ hydrated, pageType = 'search', state = 'us', madeInCan
     badge() { return tile.querySelector('.tn-badge'); },
     processed() { return tile.getAttribute('data-tn-done'); },
     reports() { return reports; },
+    counts() { return context.lastCounts; },
     classifications() { return classifications; },
     toolbar() { return inserted[0] ?? null; },
     setMode(mode) { messageListener({ type: 'tn-set-mode', mode }, null, function () {}); },
@@ -155,6 +179,10 @@ function contentHarness({ hydrated, pageType = 'search', state = 'us', madeInCan
       title = next.title ?? title;
       brand = next.brand ?? brand;
     },
+    reveal() { tile.querySelector('.tn-reveal')?.click(); },
+    removeBadge() { const badge = tile.querySelector('.tn-badge'); if (badge) tile.removeChild(badge); },
+    removeOverlay() { const overlay = tile.querySelector('.tn-overlay'); if (overlay) tile.removeChild(overlay); },
+    nested,
     tile,
   };
 }
@@ -211,6 +239,21 @@ test('processes Amazon grocery landing product cards', () => {
 
   assert.equal(page.processed(), '1');
   assert.equal(page.tile.classList.contains('tn-frost'), true);
+});
+
+test('ignores non-product banner shapes', () => {
+  const page = contentHarness({ hydrated: true, pageType: 'banner' });
+
+  assert.equal(page.processed(), null);
+  assert.equal(page.overlay(), null);
+  assert.equal(page.badge(), null);
+});
+
+test('processes only the outer card when product selectors overlap or nest', () => {
+  const page = contentHarness({ hydrated: true, pageType: 'nested' });
+
+  assert.equal(page.processed(), '1');
+  assert.equal(page.nested.getAttribute('data-tn-done'), null);
 });
 
 test('adds a red X marker to American frost', () => {
@@ -346,4 +389,60 @@ test('reclassifies a recycled card when its product title changes', async () => 
 
   assert.equal(page.classifications(), 2);
   assert.notEqual(page.overlay(), oldOverlay);
+});
+
+test('re-frosts a recycled American card after revealing its previous product', async () => {
+  const page = contentHarness({ hydrated: true });
+
+  page.reveal();
+  assert.equal(page.overlay(), null);
+  page.setProduct({ title: 'Charmin Ultra Soft Toilet Paper', brand: 'Charmin' });
+  page.mutate([element('span')]);
+  await new Promise((resolve) => setTimeout(resolve, 300));
+
+  assert.ok(page.overlay());
+  assert.equal(page.counts().us, 1);
+});
+
+test('keeps a legitimately revealed American card unfrosted on unrelated mutations', async () => {
+  const page = contentHarness({ hydrated: true });
+
+  page.reveal();
+  page.mutate([element('span')]);
+  await new Promise((resolve) => setTimeout(resolve, 300));
+
+  assert.equal(page.overlay(), null);
+  assert.equal(page.tile.classList.contains('tn-frost'), false);
+});
+
+test('restores a Canadian badge removed by Amazon without changing the product', async () => {
+  const page = contentHarness({ hydrated: true, state: 'canadian' });
+
+  page.removeBadge();
+  page.mutate([element('span')]);
+  await new Promise((resolve) => setTimeout(resolve, 300));
+
+  assert.ok(page.badge());
+  assert.equal(page.tile.classList.contains('tn-canadian'), true);
+});
+
+test('restores an unknown-origin badge removed by Amazon without changing the product', async () => {
+  const page = contentHarness({ hydrated: true, state: 'unknown' });
+
+  page.removeBadge();
+  page.mutate([element('span')]);
+  await new Promise((resolve) => setTimeout(resolve, 300));
+
+  assert.ok(page.badge());
+});
+
+test('restores an unrevealed American overlay removed by Amazon without changing the product', async () => {
+  const page = contentHarness({ hydrated: true });
+
+  page.removeOverlay();
+  page.mutate([element('span')]);
+  await new Promise((resolve) => setTimeout(resolve, 300));
+
+  assert.ok(page.overlay());
+  assert.equal(page.tile.classList.contains('tn-frost'), true);
 });
