@@ -109,7 +109,7 @@ function contentHarness({ hydrated, pageType = 'search', state = 'us', madeInCan
         (selector === 'h2 a span' || selector === 'h2 span' || selector === 'h2')) {
       return titlesReady ? { textContent: title } : null;
     }
-    if ((pageType === 'best-sellers' || pageType === 'sponsored-section' || pageType === 'homepage' || pageType === 'deals' || pageType === 'grocery') &&
+    if ((pageType === 'best-sellers' || pageType === 'sponsored-section' || pageType === 'homepage' || pageType === 'homepage-live' || pageType === 'deals' || pageType === 'generic-asin') &&
         selector === 'a.a-link-normal[href*="/dp/"]:not([aria-hidden="true"])') {
       return titlesReady ? { textContent: title } : null;
     }
@@ -160,11 +160,13 @@ function contentHarness({ hydrated, pageType = 'search', state = 'us', madeInCan
               ? 'li.octopus-pc-item'
               : pageType === 'homepage'
                 ? 'div[data-a-card-type="product"]'
-                : pageType === 'deals'
-                  ? 'div[data-testid="deal-card"]'
-                  : pageType === 'grocery'
-                    ? 'div[data-asin][data-index]:not([data-asin=""])'
-                    : 'div[data-component-type="s-search-result"]';
+                : pageType === 'homepage-live'
+                  ? '[data-csa-c-item-type="asin"][data-csa-c-type="item"]'
+                  : pageType === 'deals'
+                    ? 'div[data-testid="deal-card"]'
+                    : pageType === 'generic-asin'
+                      ? 'div[data-asin][data-index]:not([data-asin=""])'
+                      : 'div[data-component-type="s-search-result"]';
         return selector === tileSelector ? [tile] : [];
       },
       querySelector(selector) {
@@ -262,8 +264,15 @@ test('processes Amazon Deals product cards', () => {
   assert.equal(page.tile.classList.contains('tn-frost'), true);
 });
 
-test('processes Amazon grocery landing product cards', () => {
-  const page = contentHarness({ hydrated: true, pageType: 'grocery' });
+test('does not process generic data-asin/index nodes', () => {
+  const page = contentHarness({ hydrated: true, pageType: 'generic-asin' });
+
+  assert.equal(page.processed(), null);
+  assert.equal(page.tile.classList.contains('tn-frost'), false);
+});
+
+test('processes Amazon homepage ASIN wrapper cards', () => {
+  const page = contentHarness({ hydrated: true, pageType: 'homepage-live' });
 
   assert.equal(page.processed(), '1');
   assert.equal(page.tile.classList.contains('tn-frost'), true);
@@ -272,11 +281,16 @@ test('processes Amazon grocery landing product cards', () => {
 test('configured selectors match product cards but not promos, and keep nested cards canonical', () => {
   const home = element('div');
   home.setAttribute('data-a-card-type', 'product');
+  const liveHome = element('div');
+  liveHome.setAttribute('data-csa-c-item-id', 'amzn1.asin.B09NVBW6T5:home');
+  liveHome.setAttribute('data-csa-c-item-type', 'asin');
+  liveHome.setAttribute('data-csa-c-owner', 'Homepage');
+  liveHome.setAttribute('data-csa-c-type', 'item');
   const deal = element('div');
   deal.setAttribute('data-testid', 'deal-card');
-  const grocery = element('div');
-  grocery.setAttribute('data-asin', 'B012345678');
-  grocery.setAttribute('data-index', '4');
+  const genericAsin = element('div');
+  genericAsin.setAttribute('data-asin', 'B012345678');
+  genericAsin.setAttribute('data-index', '4');
   const promo = element('div');
   promo.setAttribute('data-a-card-type', 'promo');
   const outer = element('div');
@@ -288,14 +302,15 @@ test('configured selectors match product cards but not promos, and keep nested c
   nested.setAttribute('data-index', '1');
   outer.appendChild(nested);
 
-  const matched = configuredFixtureTiles([home, deal, grocery, promo, outer, nested]);
+  const matched = configuredFixtureTiles([home, liveHome, deal, genericAsin, promo, outer, nested]);
 
   assert.equal(matched.length, 4);
   assert.ok(matched.includes(home));
+  assert.ok(matched.includes(liveHome));
   assert.ok(matched.includes(deal));
-  assert.ok(matched.includes(grocery));
   assert.ok(matched.includes(outer));
   assert.equal(matched.includes(promo), false);
+  assert.equal(matched.includes(genericAsin), false);
   assert.equal(matched.includes(nested), false);
 });
 
