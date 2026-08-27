@@ -10,7 +10,7 @@ globalThis.TN_CONFIG = {
     'div[id^="CardInstance"].sb-video-creative',
     // Product-only cards used by known Amazon.ca home and Deals layouts.
     'div[data-a-card-type="product"]',
-    '[data-csa-c-item-type="asin"][data-csa-c-type="item"]',
+    '[data-csa-c-item-type="asin"][data-csa-c-type="item"][data-csa-c-owner="Homepage"]',
     'div[data-testid="deal-card"]',
   ],
   // Product title text inside a tile (first match wins).

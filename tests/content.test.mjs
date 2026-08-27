@@ -148,7 +148,7 @@ function contentHarness({ hydrated, pageType = 'search', state = 'us', madeInCan
       querySelectorAll(selector) {
         if (pageType === 'nested') {
           if (selector === 'div[data-a-card-type="product"]') return [tile];
-          if (selector === 'div[data-asin][data-index]:not([data-asin=""])') return [tile, nested];
+          if (selector === '[data-csa-c-item-type="asin"][data-csa-c-type="item"][data-csa-c-owner="Homepage"]') return [tile, nested];
           return [];
         }
         if (!titlesReady) return [];
@@ -161,7 +161,7 @@ function contentHarness({ hydrated, pageType = 'search', state = 'us', madeInCan
               : pageType === 'homepage'
                 ? 'div[data-a-card-type="product"]'
                 : pageType === 'homepage-live'
-                  ? '[data-csa-c-item-type="asin"][data-csa-c-type="item"]'
+                  ? '[data-csa-c-item-type="asin"][data-csa-c-type="item"][data-csa-c-owner="Homepage"]'
                   : pageType === 'deals'
                     ? 'div[data-testid="deal-card"]'
                     : pageType === 'generic-asin'
@@ -286,6 +286,11 @@ test('configured selectors match product cards but not promos, and keep nested c
   liveHome.setAttribute('data-csa-c-item-type', 'asin');
   liveHome.setAttribute('data-csa-c-owner', 'Homepage');
   liveHome.setAttribute('data-csa-c-type', 'item');
+  const otherOwnerAsin = element('div');
+  otherOwnerAsin.setAttribute('data-csa-c-item-id', 'amzn1.asin.B000000000:recommendation');
+  otherOwnerAsin.setAttribute('data-csa-c-item-type', 'asin');
+  otherOwnerAsin.setAttribute('data-csa-c-owner', 'Recommendation');
+  otherOwnerAsin.setAttribute('data-csa-c-type', 'item');
   const deal = element('div');
   deal.setAttribute('data-testid', 'deal-card');
   const genericAsin = element('div');
@@ -295,14 +300,14 @@ test('configured selectors match product cards but not promos, and keep nested c
   promo.setAttribute('data-a-card-type', 'promo');
   const outer = element('div');
   outer.setAttribute('data-a-card-type', 'product');
-  outer.setAttribute('data-asin', 'B000000001');
-  outer.setAttribute('data-index', '0');
+  outer.setAttribute('data-csa-c-item-type', 'asin');
+  outer.setAttribute('data-csa-c-owner', 'Homepage');
+  outer.setAttribute('data-csa-c-type', 'item');
   const nested = element('div');
-  nested.setAttribute('data-asin', 'B087654321');
-  nested.setAttribute('data-index', '1');
+  nested.setAttribute('data-testid', 'deal-card');
   outer.appendChild(nested);
 
-  const matched = configuredFixtureTiles([home, liveHome, deal, genericAsin, promo, outer, nested]);
+  const matched = configuredFixtureTiles([home, liveHome, otherOwnerAsin, deal, genericAsin, promo, outer, nested]);
 
   assert.equal(matched.length, 4);
   assert.ok(matched.includes(home));
@@ -310,6 +315,7 @@ test('configured selectors match product cards but not promos, and keep nested c
   assert.ok(matched.includes(deal));
   assert.ok(matched.includes(outer));
   assert.equal(matched.includes(promo), false);
+  assert.equal(matched.includes(otherOwnerAsin), false);
   assert.equal(matched.includes(genericAsin), false);
   assert.equal(matched.includes(nested), false);
 });
