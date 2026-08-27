@@ -11,16 +11,18 @@ test('uses CANazon for product-facing branding', async () => {
   const content = await readFile(new URL('src/content.js', root), 'utf8');
 
   assert.equal(manifest.name, 'CANazon - Buy Canadian');
+  assert.equal(manifest.version, '0.2');
   assert.equal(manifest.action.default_title, 'CANazon - Buy Canadian');
   assert.match(popup, /<title>CANazon<\/title>/);
   assert.match(popup, /<h1>CANazon<\/h1>/);
   assert.match(content, /\[CANazon\]/);
 });
 
-test('README gives ZIP installation instructions', async () => {
+test('README gives current ZIP installation instructions', async () => {
   const readme = await readFile(new URL('README.md', root), 'utf8');
 
-  assert.match(readme, /CANazon-0\.1\.1\.zip/);
+  assert.match(readme, /chromewebstore\.google\.com\/detail\/canazon-buy-canadian\/kfeobiokdejmibohjjofajkbhfiblohk/);
+  assert.match(readme, /CANazon-0\.2\.zip/);
   assert.match(readme, /Load unpacked/);
   assert.match(readme, /manifest\.json/);
 });

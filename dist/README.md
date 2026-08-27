@@ -1,6 +1,6 @@
 # CANazon
 
-> Chrome Web Store submission is in progress. Until approval, install CANazon using the ZIP instructions below.
+## [Install CANazon from the Chrome Web Store →](https://chromewebstore.google.com/detail/canazon-buy-canadian/kfeobiokdejmibohjjofajkbhfiblohk?authuser=0&hl=en-US)
 
 CANazon is a small Chrome extension that makes Canadian brands easier to spot while shopping on Amazon.
 
@@ -14,16 +14,16 @@ CANazon is a small Chrome extension that makes Canadian brands easier to spot wh
 
 ![CANazon highlighting a Canadian product and frosting an American product on Amazon](store-assets/CANazon-store-screenshot-1280x800.png)
 
-## Install from the ZIP
+## Install version 0.2 from the ZIP
 
 Chrome cannot install the ZIP directly. Unzip it first.
 
-1. Download `CANazon-0.1.1.zip`.
+1. Download [`CANazon-0.2.zip`](CANazon-0.2.zip).
 2. Double-click the ZIP to extract it.
 3. Open `chrome://extensions` in Chrome.
 4. Turn on **Developer mode**.
 5. Click **Load unpacked**.
-6. Select the extracted `CANazon-0.1.1` folder—the folder containing `manifest.json`.
+6. Select the extracted `CANazon-0.2` folder—the folder containing `manifest.json`.
 7. Open or refresh an Amazon page.
 
 To update CANazon later, replace the extracted folder with the new version and click **Reload** on the CANazon card in `chrome://extensions`.
