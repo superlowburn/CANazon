@@ -20,7 +20,7 @@ globalThis.TN_CONFIG = {
     'h2 a span',
     'h2 span',
     'h2',
-    '[data-testid="product-card-link"]',
+    'p[id^="title-"]',
     'a.a-link-normal[href*="/dp/"]:not([aria-hidden="true"])',
     '.octopus-pc-asin-title',
   ],

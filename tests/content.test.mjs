@@ -114,6 +114,9 @@ function contentHarness({ hydrated, pageType = 'search', state = 'us', madeInCan
       return titlesReady ? { textContent: title } : null;
     }
     if (pageType === 'deals-live' && selector === '[data-testid="product-card-link"]') {
+      return { textContent: '' };
+    }
+    if (pageType === 'deals-live' && selector === 'p[id^="title-"]') {
       return titlesReady ? { textContent: title } : null;
     }
     if (pageType === 'category' && selector === '.octopus-pc-asin-title') {
@@ -271,7 +274,7 @@ test('processes Amazon Deals product cards', () => {
   assert.equal(page.tile.classList.contains('tn-frost'), true);
 });
 
-test('processes observed DealsX product cards through their product-card link', () => {
+test('processes observed DealsX product cards through their populated p title', () => {
   const page = contentHarness({ hydrated: true, pageType: 'deals-live' });
 
   assert.equal(page.processed(), '1');
